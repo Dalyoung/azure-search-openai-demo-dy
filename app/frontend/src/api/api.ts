@@ -11,6 +11,7 @@ export async function askApi(options: AskRequest): Promise<AskResponse> {
             approach: options.approach,
             overrides: {
                 semantic_ranker: options.overrides?.semanticRanker,
+                vector_db: options.overrides?.vectorDB,
                 semantic_captions: options.overrides?.semanticCaptions,
                 top: options.overrides?.top,
                 temperature: options.overrides?.temperature,
@@ -31,6 +32,8 @@ export async function askApi(options: AskRequest): Promise<AskResponse> {
 }
 
 export async function chatApi(options: ChatRequest): Promise<AskResponse> {
+    console.log(options);
+    console.log(options.overrides?.temperature);
     const response = await fetch("/chat", {
         method: "POST",
         headers: {
@@ -41,6 +44,7 @@ export async function chatApi(options: ChatRequest): Promise<AskResponse> {
             approach: options.approach,
             overrides: {
                 semantic_ranker: options.overrides?.semanticRanker,
+                vector_db: options.overrides?.vectorDB,
                 semantic_captions: options.overrides?.semanticCaptions,
                 top: options.overrides?.top,
                 temperature: options.overrides?.temperature,

@@ -17,10 +17,13 @@ const Chat = () => {
     const [isConfigPanelOpen, setIsConfigPanelOpen] = useState(false);
     const [promptTemplate, setPromptTemplate] = useState<string>("");
     const [retrieveCount, setRetrieveCount] = useState<number>(3);
+    const [useVectorDB, setUseVectorDB] = useState<boolean>(false);
     const [useSemanticRanker, setUseSemanticRanker] = useState<boolean>(true);
     const [useSemanticCaptions, setUseSemanticCaptions] = useState<boolean>(false);
     const [excludeCategory, setExcludeCategory] = useState<string>("");
     const [useSuggestFollowupQuestions, setUseSuggestFollowupQuestions] = useState<boolean>(false);
+    //Temperature 추가
+    const [temperature, setTemperature] = useState<number>(0.7);
 
     const lastQuestionRef = useRef<string>("");
     const chatMessageStreamEnd = useRef<HTMLDivElement | null>(null);
@@ -51,9 +54,11 @@ const Chat = () => {
                     promptTemplate: promptTemplate.length === 0 ? undefined : promptTemplate,
                     excludeCategory: excludeCategory.length === 0 ? undefined : excludeCategory,
                     top: retrieveCount,
+                    vectorDB: useVectorDB,
                     semanticRanker: useSemanticRanker,
                     semanticCaptions: useSemanticCaptions,
-                    suggestFollowupQuestions: useSuggestFollowupQuestions
+                    suggestFollowupQuestions: useSuggestFollowupQuestions,
+                    temperature: temperature
                 }
             };
             const result = await chatApi(request);
@@ -83,6 +88,10 @@ const Chat = () => {
         setRetrieveCount(parseInt(newValue || "3"));
     };
 
+    const onUseVectorDBChange = (_ev?: React.FormEvent<HTMLElement | HTMLInputElement>, checked?: boolean) => {
+        setUseVectorDB(!!checked);
+    };
+
     const onUseSemanticRankerChange = (_ev?: React.FormEvent<HTMLElement | HTMLInputElement>, checked?: boolean) => {
         setUseSemanticRanker(!!checked);
     };
@@ -97,6 +106,11 @@ const Chat = () => {
 
     const onUseSuggestFollowupQuestionsChange = (_ev?: React.FormEvent<HTMLElement | HTMLInputElement>, checked?: boolean) => {
         setUseSuggestFollowupQuestions(!!checked);
+    };
+
+    //Temperatur
+    const onTemperatureChange = (_ev?: React.SyntheticEvent<HTMLElement, Event>, newValue?: string) => {
+        setTemperature(parseFloat(newValue || "0.7"));
     };
 
     const onExampleClicked = (example: string) => {
@@ -226,11 +240,13 @@ const Chat = () => {
                         onChange={onRetrieveCountChange}
                     />
                     <TextField className={styles.chatSettingsSeparator} label="Exclude category" onChange={onExcludeCategoryChanged} />
+                    <Checkbox className={styles.chatSettingsSeparator} checked={useVectorDB} label="Use VectorDB for search" onChange={onUseVectorDBChange} />
                     <Checkbox
                         className={styles.chatSettingsSeparator}
                         checked={useSemanticRanker}
                         label="Use semantic ranker for retrieval"
                         onChange={onUseSemanticRankerChange}
+                        disabled={useVectorDB}
                     />
                     <Checkbox
                         className={styles.chatSettingsSeparator}
@@ -244,6 +260,15 @@ const Chat = () => {
                         checked={useSuggestFollowupQuestions}
                         label="Suggest follow-up questions"
                         onChange={onUseSuggestFollowupQuestionsChange}
+                    />
+                    <SpinButton
+                        className={styles.chatSettingsSeparator}
+                        label="Temperature Setting:"
+                        min={0}
+                        step={0.1}
+                        max={1.0}
+                        defaultValue={temperature.toString()}
+                        onChange={onTemperatureChange}
                     />
                 </Panel>
             </div>

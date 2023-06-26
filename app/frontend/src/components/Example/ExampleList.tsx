@@ -9,11 +9,14 @@ export type ExampleModel = {
 
 const EXAMPLES: ExampleModel[] = [
     {
-        text: "What is included in my Northwind Health Plus plan that is not in standard?",
-        value: "What is included in my Northwind Health Plus plan that is not in standard?"
+        text: "현대카드 홈페이지와 고객센터 정보 알려줘",
+        value: "현대카드 홈페이지와 고객센터 정보 알려줘"
     },
-    { text: "What happens in a performance review?", value: "What happens in a performance review?" },
-    { text: "What does a Product Manager do?", value: "What does a Product Manager do?" }
+    { text: "현대카드 제로 에디션 상품들의 정보 (연회비 등) 정리해서 알려줘", value: "현대카드 제로 에디션 상품들의 정보 (연회비 등) 정리해서 알려줘" },
+    {
+        text: "현대카드에서 진행하는 이벤트 중 자동차 살때 할인받을 수 있는 이벤트는 뭐 있어?",
+        value: "현대카드에서 진행하는 이벤트 중 자동차 살때 할인받을 수 있는 이벤트가 있어?"
+    }
 ];
 
 interface Props {

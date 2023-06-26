@@ -12,11 +12,12 @@ import { SettingsButton } from "../../components/SettingsButton/SettingsButton";
 
 const OneShot = () => {
     const [isConfigPanelOpen, setIsConfigPanelOpen] = useState(false);
-    const [approach, setApproach] = useState<Approaches>(Approaches.RetrieveThenRead);
+    const [approach, setApproach] = useState<Approaches>(Approaches.ReadRetrieveRead);
     const [promptTemplate, setPromptTemplate] = useState<string>("");
     const [promptTemplatePrefix, setPromptTemplatePrefix] = useState<string>("");
     const [promptTemplateSuffix, setPromptTemplateSuffix] = useState<string>("");
     const [retrieveCount, setRetrieveCount] = useState<number>(3);
+    const [useVectorDB, setUseVectorDB] = useState<boolean>(false);
     const [useSemanticRanker, setUseSemanticRanker] = useState<boolean>(true);
     const [useSemanticCaptions, setUseSemanticCaptions] = useState<boolean>(false);
     const [excludeCategory, setExcludeCategory] = useState<string>("");
@@ -48,6 +49,7 @@ const OneShot = () => {
                     promptTemplateSuffix: promptTemplateSuffix.length === 0 ? undefined : promptTemplateSuffix,
                     excludeCategory: excludeCategory.length === 0 ? undefined : excludeCategory,
                     top: retrieveCount,
+                    vectorDB: useVectorDB,
                     semanticRanker: useSemanticRanker,
                     semanticCaptions: useSemanticCaptions
                 }
@@ -75,6 +77,10 @@ const OneShot = () => {
 
     const onRetrieveCountChange = (_ev?: React.SyntheticEvent<HTMLElement, Event>, newValue?: string) => {
         setRetrieveCount(parseInt(newValue || "3"));
+    };
+
+    const onUseVectorDBChange = (_ev?: React.FormEvent<HTMLElement | HTMLInputElement>, checked?: boolean) => {
+        setUseVectorDB(!!checked);
     };
 
     const onApproachChange = (_ev?: React.FormEvent<HTMLElement | HTMLInputElement>, option?: IChoiceGroupOption) => {
@@ -116,17 +122,19 @@ const OneShot = () => {
 
     const approaches: IChoiceGroupOption[] = [
         {
+            key: Approaches.ReadRetrieveRead,
+            text: "Read-Retrieve-Read"
+        }
+        /**,
+        {
             key: Approaches.RetrieveThenRead,
             text: "Retrieve-Then-Read"
         },
-        {
-            key: Approaches.ReadRetrieveRead,
-            text: "Read-Retrieve-Read"
-        },
+
         {
             key: Approaches.ReadDecomposeAsk,
             text: "Read-Decompose-Ask"
-        }
+        } */
     ];
 
     return (
@@ -230,11 +238,14 @@ const OneShot = () => {
                     onChange={onRetrieveCountChange}
                 />
                 <TextField className={styles.oneshotSettingsSeparator} label="Exclude category" onChange={onExcludeCategoryChanged} />
+
+                <Checkbox className={styles.oneshotSettingsSeparator} checked={useVectorDB} label="Use VectorDB for search" onChange={onUseVectorDBChange} />
                 <Checkbox
                     className={styles.oneshotSettingsSeparator}
                     checked={useSemanticRanker}
                     label="Use semantic ranker for retrieval"
                     onChange={onUseSemanticRankerChange}
+                    disabled={useVectorDB}
                 />
                 <Checkbox
                     className={styles.oneshotSettingsSeparator}

@@ -4,6 +4,9 @@ from azure.search.documents.models import QueryType
 from approaches.approach import Approach
 from text import nonewlines
 
+from azure.search.documents.models import Vector  
+from tenacity import retry, wait_random_exponential, stop_after_attempt  
+
 # Simple retrieve-then-read implementation, using the Cognitive Search and OpenAI APIs directly. It first retrieves
 # top documents from search, then constructs a prompt with them, and then uses OpenAI to generate an completion 
 # (answer) with that prompt.
@@ -41,32 +44,61 @@ Question:
 Search query:
 """
 
-    def __init__(self, search_client: SearchClient, chatgpt_deployment: str, gpt_deployment: str, sourcepage_field: str, content_field: str):
+
+    def __init__(self, search_client: SearchClient, chatgpt_deployment: str, gpt_deployment: str, sourcepage_field: str, content_field: str, search_client_vector: SearchClient, openai_client : openai):
         self.search_client = search_client
         self.chatgpt_deployment = chatgpt_deployment
         self.gpt_deployment = gpt_deployment
         self.sourcepage_field = sourcepage_field
         self.content_field = content_field
+        self.search_client_vector = search_client_vector
+        self.openai_client = openai_client
 
+    # Embeddings 추가
+    @retry(wait=wait_random_exponential(min=1, max=20), stop=stop_after_attempt(6))
+    def generate_embeddings(self, text):
+        print("Generating embeddings for Query : ", text)
+        response = self.openai_client.Embedding.create(
+            input=text, engine="text-embedding-ada-002")
+        embeddings = response['data'][0]['embedding']
+        return embeddings
+    
     def run(self, history: list[dict], overrides: dict) -> any:
         use_semantic_captions = True if overrides.get("semantic_captions") else False
         top = overrides.get("top") or 3
         exclude_category = overrides.get("exclude_category") or None
         filter = "category ne '{}'".format(exclude_category.replace("'", "''")) if exclude_category else None
 
+        print('overrides : ', overrides)
         # STEP 1: Generate an optimized keyword search query based on the chat history and the last question
         prompt = self.query_prompt_template.format(chat_history=self.get_chat_history_as_text(history, include_last_turn=False), question=history[-1]["user"])
         completion = openai.Completion.create(
             engine=self.gpt_deployment, 
             prompt=prompt, 
-            temperature=0.0, 
+            temperature=overrides.get("temperature"), 
             max_tokens=32, 
             n=1, 
             stop=["\n"])
         q = completion.choices[0].text
 
+        
         # STEP 2: Retrieve relevant documents from the search index with the GPT optimized query
-        if overrides.get("semantic_ranker"):
+        if overrides.get("vector_db"):
+            print("query :", q)
+            vectorValue = self.generate_embeddings(q)
+            #print("Vector Value : ", vectorValue)
+            r = self.search_client_vector.search(search_text=q, 
+                                          vector=Vector(value=vectorValue,
+                                                        k=3, fields="contentVector"),
+                                          query_type=QueryType.SEMANTIC, 
+                                          query_language="en-us", 
+                                          query_speller="lexicon", 
+                                          semantic_configuration_name="default", 
+                                          top=top, 
+                                          query_caption="extractive",
+                                          query_answer="extractive")
+        elif overrides.get("semantic_ranker"):
+            
             r = self.search_client.search(q, 
                                           filter=filter,
                                           query_type=QueryType.SEMANTIC, 
@@ -77,6 +109,8 @@ Search query:
                                           query_caption="extractive|highlight-false" if use_semantic_captions else None)
         else:
             r = self.search_client.search(q, filter=filter, top=top)
+        for resulttemp in r:
+            print('Results : ', resulttemp)
         if use_semantic_captions:
             results = [doc[self.sourcepage_field] + ": " + nonewlines(" . ".join([c.text for c in doc['@search.captions']])) for doc in r]
         else:
@@ -99,6 +133,7 @@ Search query:
             engine=self.chatgpt_deployment, 
             prompt=prompt, 
             temperature=overrides.get("temperature") or 0.7, 
+            #temperature=0.0, 
             max_tokens=1024, 
             n=1, 
             stop=["<|im_end|>", "<|im_start|>"])
