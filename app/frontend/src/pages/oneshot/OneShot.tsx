@@ -22,6 +22,9 @@ const OneShot = () => {
     const [useSemanticCaptions, setUseSemanticCaptions] = useState<boolean>(false);
     const [excludeCategory, setExcludeCategory] = useState<string>("");
 
+    //Temperature 추가
+    const [temperature, setTemperature] = useState<number>(0.7);
+
     const lastQuestionRef = useRef<string>("");
 
     const [isLoading, setIsLoading] = useState<boolean>(false);
@@ -51,7 +54,8 @@ const OneShot = () => {
                     top: retrieveCount,
                     vectorDB: useVectorDB,
                     semanticRanker: useSemanticRanker,
-                    semanticCaptions: useSemanticCaptions
+                    semanticCaptions: useSemanticCaptions,
+                    temperature: temperature
                 }
             };
             const result = await askApi(request);
@@ -97,6 +101,11 @@ const OneShot = () => {
 
     const onExcludeCategoryChanged = (_ev?: React.FormEvent, newValue?: string) => {
         setExcludeCategory(newValue || "");
+    };
+
+    //Temperatur
+    const onTemperatureChange = (_ev?: React.SyntheticEvent<HTMLElement, Event>, newValue?: string) => {
+        setTemperature(parseFloat(newValue || "0.7"));
     };
 
     const onExampleClicked = (example: string) => {
@@ -253,6 +262,15 @@ const OneShot = () => {
                     label="Use query-contextual summaries instead of whole documents"
                     onChange={onUseSemanticCaptionsChange}
                     disabled={!useSemanticRanker}
+                />
+                <SpinButton
+                    className={styles.oneshotSettingsSeparator}
+                    label="Temperature Setting:"
+                    min={0}
+                    step={0.01}
+                    max={2}
+                    defaultValue={temperature.toString()}
+                    onChange={onTemperatureChange}
                 />
             </Panel>
         </div>

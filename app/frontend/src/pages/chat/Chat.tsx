@@ -265,8 +265,8 @@ const Chat = () => {
                         className={styles.chatSettingsSeparator}
                         label="Temperature Setting:"
                         min={0}
-                        step={0.1}
-                        max={1.0}
+                        step={0.01}
+                        max={2}
                         defaultValue={temperature.toString()}
                         onChange={onTemperatureChange}
                     />

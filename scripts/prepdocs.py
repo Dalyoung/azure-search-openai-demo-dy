@@ -13,6 +13,7 @@ from azure.search.documents.indexes import SearchIndexClient
 from azure.search.documents.indexes.models import *
 from azure.search.documents import SearchClient
 from azure.ai.formrecognizer import DocumentAnalysisClient
+import json
 
 MAX_SECTION_LENGTH = 1000
 SENTENCE_SEARCH_LIMIT = 100
@@ -130,6 +131,7 @@ def get_document_text(filename):
         form_recognizer_results = poller.result()
 
         for page_num, page in enumerate(form_recognizer_results.pages):
+            # print("Page Num and Page : ", page_num, page)
             tables_on_page = [table for table in form_recognizer_results.tables if table.bounding_regions[0].page_number == page_num + 1]
 
             # mark all positions of the table spans in the page
@@ -157,7 +159,8 @@ def get_document_text(filename):
             page_text += " "
             page_map.append((page_num, offset, page_text))
             offset += len(page_text)
-
+    # for pm in page_map:
+    #     print("Page Map : ", pm)
     return page_map
 
 def split_text(page_map):
@@ -221,7 +224,9 @@ def split_text(page_map):
         yield (all_text[start:end], find_page(start))
 
 def create_sections(filename, page_map):
+    
     for i, (section, pagenum) in enumerate(split_text(page_map)):
+        
         yield {
             "id": re.sub("[^0-9a-zA-Z_-]","_",f"{filename}-{i}"),
             "content": section,
@@ -312,4 +317,6 @@ else:
                 upload_blobs(filename)
             page_map = get_document_text(filename)
             sections = create_sections(os.path.basename(filename), page_map)
-            index_sections(os.path.basename(filename), sections)
+            for s in sections:
+                print("Sections : ", s)
+            # index_sections(os.path.basename(filename), sections)

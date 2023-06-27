@@ -75,7 +75,7 @@ Search query:
         completion = openai.Completion.create(
             engine=self.gpt_deployment, 
             prompt=prompt, 
-            temperature=overrides.get("temperature"), 
+            temperature=0.0, 
             max_tokens=32, 
             n=1, 
             stop=["\n"])
@@ -98,7 +98,7 @@ Search query:
                                           query_caption="extractive",
                                           query_answer="extractive")
         elif overrides.get("semantic_ranker"):
-            
+            print("Semantic....")
             r = self.search_client.search(q, 
                                           filter=filter,
                                           query_type=QueryType.SEMANTIC, 
@@ -109,14 +109,13 @@ Search query:
                                           query_caption="extractive|highlight-false" if use_semantic_captions else None)
         else:
             r = self.search_client.search(q, filter=filter, top=top)
-        for resulttemp in r:
-            print('Results : ', resulttemp)
+
         if use_semantic_captions:
-            results = [doc[self.sourcepage_field] + ": " + nonewlines(" . ".join([c.text for c in doc['@search.captions']])) for doc in r]
+            results = [doc[self.sourcepage_field] + ": " + nonewlines(" -.- ".join([c.text for c in doc['@search.captions']])) for doc in r]
         else:
             results = [doc[self.sourcepage_field] + ": " + nonewlines(doc[self.content_field]) for doc in r]
+        
         content = "\n".join(results)
-
         follow_up_questions_prompt = self.follow_up_questions_prompt_content if overrides.get("suggest_followup_questions") else ""
         
         # Allow client to replace the entire prompt, or to inject into the exiting prompt using >>>
@@ -133,10 +132,12 @@ Search query:
             engine=self.chatgpt_deployment, 
             prompt=prompt, 
             temperature=overrides.get("temperature") or 0.7, 
-            #temperature=0.0, 
             max_tokens=1024, 
             n=1, 
             stop=["<|im_end|>", "<|im_start|>"])
+
+        print("Print Content...", content)
+        print("Print Results...:", {"data_points": results, "answer": completion.choices[0].text, "thoughts": f"Searched for:<br>{q}<br><br>Prompt:<br>" + prompt.replace('\n', '<br>')})
 
         return {"data_points": results, "answer": completion.choices[0].text, "thoughts": f"Searched for:<br>{q}<br><br>Prompt:<br>" + prompt.replace('\n', '<br>')}
     

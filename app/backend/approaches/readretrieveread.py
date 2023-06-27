@@ -15,7 +15,7 @@ from azure.search.documents.models import Vector
 from tenacity import retry, wait_random_exponential, stop_after_attempt  
 # Attempt to answer questions by iteratively evaluating the question to see what information is missing, and once all information
 # is present then formulate an answer. Each iteration consists of two parts: first use GPT to see if we need more information, 
-# second if more data is needed use the requested "tool" to retrieve it. The last call to GPT answers the actual question.
+# second if more data is needed use the requested "tool" to retrieve it. The last call to GPT ansYowers the actual question.
 # This is inspired by the MKRL paper[1] and applied here using the implementation in Langchain.
 # [1] E. Karpas, et al. arXiv:2205.00445
 class ReadRetrieveReadApproach(Approach):
@@ -117,6 +117,7 @@ Thought: {agent_scratchpad}"""
             prefix=overrides.get("prompt_template_prefix") or self.template_prefix,
             suffix=overrides.get("prompt_template_suffix") or self.template_suffix,
             input_variables = ["input", "agent_scratchpad"])
+        print("Temperature: ", overrides.get("temperature"))
         llm = AzureOpenAI(deployment_name=self.openai_deployment, temperature=overrides.get("temperature") or 0.3, openai_api_key=openai.api_key)
         #llm = AzureOpenAI(deployment_name=self.openai_deployment, temperature=0.0, openai_api_key=openai.api_key)
         chain = LLMChain(llm = llm, prompt = prompt)
