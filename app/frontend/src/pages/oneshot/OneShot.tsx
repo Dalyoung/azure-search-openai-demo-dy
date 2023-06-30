@@ -105,7 +105,7 @@ const OneShot = () => {
 
     //Temperatur
     const onTemperatureChange = (_ev?: React.SyntheticEvent<HTMLElement, Event>, newValue?: string) => {
-        setTemperature(parseFloat(newValue || "0.7"));
+        setTemperature(parseFloat(newValue || "0.1"));
     };
 
     const onExampleClicked = (example: string) => {
@@ -227,14 +227,14 @@ const OneShot = () => {
                             autoAdjustHeight
                             onChange={onPromptTemplatePrefixChange}
                         />
-                        <TextField
+                        {/* <TextField
                             className={styles.oneshotSettingsSeparator}
                             defaultValue={promptTemplateSuffix}
                             label="Override prompt suffix template"
                             multiline
                             autoAdjustHeight
                             onChange={onPromptTemplateSuffixChange}
-                        />
+                        /> */}
                     </>
                 )}
 

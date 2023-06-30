@@ -89,7 +89,7 @@ Search query:
             #print("Vector Value : ", vectorValue)
             r = self.search_client_vector.search(search_text=q, 
                                           vector=Vector(value=vectorValue,
-                                                        k=3, fields="contentVector"),
+                                                      k=3, fields="contentVector"),
                                           query_type=QueryType.SEMANTIC, 
                                           query_language="en-us", 
                                           query_speller="lexicon", 
@@ -132,7 +132,7 @@ Search query:
             engine=self.chatgpt_deployment, 
             prompt=prompt, 
             temperature=overrides.get("temperature") or 0.7, 
-            max_tokens=1024, 
+            max_tokens=2048, 
             n=1, 
             stop=["<|im_end|>", "<|im_start|>"])
 

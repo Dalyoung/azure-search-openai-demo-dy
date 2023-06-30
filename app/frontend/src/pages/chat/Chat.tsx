@@ -110,7 +110,7 @@ const Chat = () => {
 
     //Temperatur
     const onTemperatureChange = (_ev?: React.SyntheticEvent<HTMLElement, Event>, newValue?: string) => {
-        setTemperature(parseFloat(newValue || "0.7"));
+        setTemperature(parseFloat(newValue || "0.1"));
     };
 
     const onExampleClicked = (example: string) => {
