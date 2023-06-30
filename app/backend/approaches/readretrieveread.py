@@ -43,7 +43,7 @@ Thought: {agent_scratchpad}"""
 
     def __init__(self, search_client: SearchClient, openai_deployment: str, sourcepage_field: str, content_field: str, search_client_vector: SearchClient, openai_client : openai):
         self.search_client = search_client
-        self.openai_deployment = openai_deployment
+        self.openai_deployment = openai_deployment #davinci
         self.sourcepage_field = sourcepage_field
         self.content_field = content_field
         self.search_client_vector = search_client_vector
@@ -112,13 +112,17 @@ Thought: {agent_scratchpad}"""
         #tools = [acs_tool, employee_tool]dk
         tools = [acs_tool]
 
+        print("Suffix Prompt:", overrides.get("prompt_template_suffix") or self.template_suffix)
         prompt = ZeroShotAgent.create_prompt(
             tools=tools,
             prefix=overrides.get("prompt_template_prefix") or self.template_prefix,
             suffix=overrides.get("prompt_template_suffix") or self.template_suffix,
             input_variables = ["input", "agent_scratchpad"])
         print("Temperature: ", overrides.get("temperature"))
-        llm = AzureOpenAI(deployment_name=self.openai_deployment, temperature=overrides.get("temperature") or 0.3, openai_api_key=openai.api_key)
+        llm = AzureOpenAI(deployment_name=self.openai_deployment, 
+                          temperature=overrides.get("temperature") or 0.3, 
+                          openai_api_key=openai.api_key, 
+                          max_tokens=1024)
         #llm = AzureOpenAI(deployment_name=self.openai_deployment, temperature=0.0, openai_api_key=openai.api_key)
         chain = LLMChain(llm = llm, prompt = prompt)
         agent_exec = AgentExecutor.from_agent_and_tools(
