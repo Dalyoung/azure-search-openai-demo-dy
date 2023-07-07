@@ -44,6 +44,6 @@ default_creds = azd_credential if args.searchkey == None or args.storagekey == N
 formrecognizer_creds = default_creds if args.formrecognizerkey == None else AzureKeyCredential(args.formrecognizerkey)
 
 form_recognizer_client = DocumentAnalysisClient(endpoint=f"https://{args.formrecognizerservice}.cognitiveservices.azure.com/", credential=formrecognizer_creds, headers={"x-ms-useragent": "azure-search-chat-demo/1.0.0"})
-df = summarization.summarize_folder("data/hcc_docs_novel", form_recognizer_client, mode="map_reduce")
+df = summarization.summarize_folder("data/summary", form_recognizer_client, mode="map_reduce")
 
 print(df)

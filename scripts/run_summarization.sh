@@ -20,4 +20,4 @@ echo 'Installing dependencies from "requirements.txt" into virtual environment'
 export AZURE_SEARCH_INDEX="hcc-poc-index-summary"
 
 echo 'Running "run_summarization.py"'
-./scripts/.venv/bin/python ./scripts/run_summarization.py './data/manuals/*.pdf' --category "manuals" --storageaccount "$AZURE_STORAGE_ACCOUNT" --container "$AZURE_STORAGE_CONTAINER" --searchservice "$AZURE_SEARCH_SERVICE" --index "$AZURE_SEARCH_INDEX" --formrecognizerservice "$AZURE_FORMRECOGNIZER_SERVICE" --tenantid "$AZURE_TENANT_ID" -v
+./scripts/.venv/bin/python ./scripts/run_summarization.py './data/hcc_docs_guide/hcc_docs_guide_00001.pdf' --category "manuals" --storageaccount "$AZURE_STORAGE_ACCOUNT" --container "$AZURE_STORAGE_CONTAINER" --searchservice "$AZURE_SEARCH_SERVICE" --index "$AZURE_SEARCH_INDEX" --formrecognizerservice "$AZURE_FORMRECOGNIZER_SERVICE" --tenantid "$AZURE_TENANT_ID" -v

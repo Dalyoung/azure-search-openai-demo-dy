@@ -5,6 +5,7 @@ import html
 import io
 import re
 import time
+import json
 from pypdf import PdfReader, PdfWriter
 from azure.identity import AzureDeveloperCliCredential
 from azure.core.credentials import AzureKeyCredential
@@ -22,12 +23,15 @@ MAX_SECTION_LENGTH = 1000
 SENTENCE_SEARCH_LIMIT = 100
 SECTION_OVERLAP = 100
 
+TITLE_VECTOR = ''
+
 parser = argparse.ArgumentParser(
     description="Prepare documents by extracting content from PDFs, splitting content into sections, uploading to blob storage, and indexing in a search index.",
     epilog="Example: prepdocs.py '..\data\*' --storageaccount myaccount --container mycontainer --searchservice mysearch --index myindex -v"
     )
 parser.add_argument("files", help="Files to be processed")
 parser.add_argument("--category", help="Value for the category field in the search index for all sections indexed in this run")
+parser.add_argument("--title", help="title for file")
 parser.add_argument("--skipblobs", action="store_true", help="Skip uploading individual pages to Azure Blob Storage")
 parser.add_argument("--storageaccount", help="Azure Blob Storage account name")
 parser.add_argument("--container", help="Azure Blob Storage container name")
@@ -67,7 +71,7 @@ print("OpenAI Info :  " + openai.api_key, openai.api_base )
 
 
 # Embeddings 추가
-@retry(wait=wait_random_exponential(min=1, max=20), stop=stop_after_attempt(6))
+@retry(wait=wait_random_exponential(min=1, max=20), stop=stop_after_attempt(10))
 def generate_embeddings(text):
     if args.verbose: print(f"Generating embeddings..")
     response = openai.Embedding.create(
@@ -251,27 +255,43 @@ def create_sections(filename, page_map):
     for i, (section, pagenum) in enumerate(split_text(page_map)):
         yield {
             "id": re.sub("[^0-9a-zA-Z_-]","_",f"{filename}-{i}"),
+            "title": args.title,
+            "content": section,
+            "category": args.category,
+            "sourcepage": blob_name_from_file_page(filename, pagenum),
+            "sourcefile": filename
+        }
+def create_sections_vector(filename, page_map):
+    for i, (section, pagenum) in enumerate(split_text(page_map)):
+        yield {
+            "id": re.sub("[^0-9a-zA-Z_-]","_",f"{filename}-{i}"),
+            "title": args.title,
             "content": section,
             "category": args.category,
             "sourcepage": blob_name_from_file_page(filename, pagenum),
             "sourcefile": filename,
+            "titleVector": TITLE_VECTOR,
             "contentVector": generate_embeddings(section)
         }
 
-def create_search_index():
-    if args.verbose: print(f"Ensuring search index {args.index} exists")
+def create_search_index_vector():
+    indexName = args.index + '-vector'
+    if args.verbose: print(f"Ensuring search index {indexName} exists")
     index_client = SearchIndexClient(endpoint=f"https://{args.searchservice}.search.windows.net/",
                                      credential=search_creds)
-    if args.index not in index_client.list_index_names():
+    if indexName not in index_client.list_index_names():
         index = SearchIndex(
-            name=args.index,
+            name=indexName,
             fields=[
                 SimpleField(name="id", type="Edm.String", key=True),
-                SearchableField(name="content", type=SearchFieldDataType.String, searchable=True, retrievable=True),
-                SearchableField(name="category", type=SearchFieldDataType.String, filterable=True, searchable=True, retrievable=True),
+                # SearchableField(name="title", type=SearchFieldDataType.String, filterable=True, searchable=True, retrievable=True),
+                # SearchableField(name="content", type=SearchFieldDataType.String, searchable=True, retrievable=True),
+                SearchableField(name="title", type="Edm.String", filterable=True, analyzer_name="ko.microsoft"),
+                SearchableField(name="content", type="Edm.String", analyzer_name="ko.microsoft"),
+                SimpleField(name="category", type=SearchFieldDataType.String, filterable=True, searchable=True, retrievable=True),
                 SimpleField(name="sourcepage", type="Edm.String", filterable=True, facetable=True),
                 SimpleField(name="sourcefile", type="Edm.String", filterable=True, facetable=True),
-                #SearchField(name="titleVector", type=SearchFieldDataType.Collection(SearchFieldDataType.Single), searchable=True, dimensions=1536, vector_search_configuration="dy-vector-config"),
+                SearchField(name="titleVector", type=SearchFieldDataType.Collection(SearchFieldDataType.Single), searchable=True, dimensions=1536, vector_search_configuration="dy-vector-config"),
                 SearchField(name="contentVector", type=SearchFieldDataType.Collection(SearchFieldDataType.Single), searchable=True, dimensions=1536, vector_search_configuration="dy-vector-config")
             ],
             vector_search = VectorSearch(
@@ -294,15 +314,42 @@ def create_search_index():
                     prioritized_fields=PrioritizedFields(
                         title_field=None, prioritized_keywords_fields=[SemanticField(field_name="category")], prioritized_content_fields=[SemanticField(field_name='content')]))])
         )
+        if args.verbose: print(f"Creating {indexName} search index")
+        index_client.create_index(index)
+    else:
+        if args.verbose: print(f"Search index {indexName} already exists")
+
+def create_search_index():
+    if args.verbose: print(f"Ensuring search index {args.index} exists")
+    index_client = SearchIndexClient(endpoint=f"https://{args.searchservice}.search.windows.net/",
+                                     credential=search_creds)
+    if args.index not in index_client.list_index_names():
+        index = SearchIndex(
+            name=args.index,
+            fields=[
+                SimpleField(name="id", type="Edm.String", key=True),
+                SearchableField(name="title", type="Edm.String", filterable=True, analyzer_name="ko.microsoft"),
+                SearchableField(name="content", type="Edm.String", analyzer_name="ko.microsoft"),
+                SimpleField(name="category", type="Edm.String", filterable=True, facetable=True),
+                SimpleField(name="sourcepage", type="Edm.String", filterable=True, facetable=True),
+                SimpleField(name="sourcefile", type="Edm.String", filterable=True, facetable=True)
+            ],
+            semantic_settings=SemanticSettings(
+                configurations=[SemanticConfiguration(
+                    name='default',
+                    prioritized_fields=PrioritizedFields(
+                        title_field=None, prioritized_content_fields=[SemanticField(field_name='content')]))])
+        )
         if args.verbose: print(f"Creating {args.index} search index")
         index_client.create_index(index)
     else:
         if args.verbose: print(f"Search index {args.index} already exists")
 
-def index_sections(filename, sections):
-    if args.verbose: print(f"Indexing sections from '{filename}' into search index '{args.index}'")
+
+def index_sections(filename, sections, indexName):
+    if args.verbose: print(f"Indexing sections from '{filename}' into search index '{indexName}'")
     search_client = SearchClient(endpoint=f"https://{args.searchservice}.search.windows.net/",
-                                    index_name=args.index,
+                                    index_name=indexName,
                                     credential=search_creds)
     i = 0
     batch = []
@@ -318,7 +365,7 @@ def index_sections(filename, sections):
     if len(batch) > 0:
         results = search_client.upload_documents(documents=batch)
         succeeded = sum([1 for r in results if r.succeeded])
-        if args.verbose: print(f"\tIndexed {len(results)} sections, {succeeded} succeeded")
+        if args.verbose: print(f"\tIndexed {len(results)} sections into {indexName}, {succeeded} succeeded")
 
 def remove_from_index(filename):
     if args.verbose: print(f"Removing sections from '{filename or '<all>'}' from search index '{args.index}'")
@@ -342,6 +389,7 @@ else:
     if not args.remove:
         # 인덱스가 없으면 생성해줌
         create_search_index()
+        create_search_index_vector()
     
     print(f"Processing files...")
     for filename in glob.glob(args.files):
@@ -354,8 +402,26 @@ else:
             remove_from_index(None)
         else:
             # Main 부분
+            starttime = time
+            strttimeStr = starttime.strftime('%Y-%m-%d %H:%M:%S')
+            
             if not args.skipblobs:
                 upload_blobs(filename)
             page_map = get_document_text(filename) # Form Recognizer를 통해 문서를 분석하여 page_map 형태로 생성
             sections = create_sections(os.path.basename(filename), page_map) # Section 값으로 생성
-            index_sections(os.path.basename(filename), sections)
+
+            TITLE_VECTOR = generate_embeddings(args.title)
+            # print(TITLE_VECTOR)
+            sections_vector = create_sections_vector(os.path.basename(filename), page_map) # Section 값으로 생성
+            # for s in sections:
+            #     print("Sections : ", s)
+            #json_data = json.dumps(sections, indent=4)
+            # with open(filename + '.csv', 'w') as f:
+            #     f.write(sections)
+
+            index_sections(os.path.basename(filename), sections, args.index)
+            index_sections(os.path.basename(filename), sections_vector, args.index + '-vector')
+
+            endtime = time
+            print(args.title, filename, strttimeStr, endtime.strftime('%Y-%m-%d %H:%M:%S'))
+

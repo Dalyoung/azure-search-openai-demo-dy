@@ -72,8 +72,8 @@ Thought: {agent_scratchpad}"""
                                           vector=Vector(value=vectorValue,
                                                         k=3, fields="contentVector"),
                                           query_type=QueryType.SEMANTIC, 
-                                          query_language="en-us", 
-                                          query_speller="lexicon", 
+                                          query_language="ko-KR", 
+                                        #   query_speller="lexicon", 
                                           semantic_configuration_name="default", 
                                           top=top, 
                                           query_caption="extractive",
@@ -82,8 +82,8 @@ Thought: {agent_scratchpad}"""
             r = self.search_client.search(q,
                                           filter=filter, 
                                           query_type=QueryType.SEMANTIC, 
-                                          query_language="en-us", 
-                                          query_speller="lexicon", 
+                                          query_language="ko-KR", 
+                                        #   query_speller="lexicon", 
                                           semantic_configuration_name="default", 
                                           top = top,
                                           query_caption="extractive|highlight-false" if use_semantic_captions else None)
@@ -109,8 +109,9 @@ Thought: {agent_scratchpad}"""
                         description=self.CognitiveSearchToolDescription,
                         callbacks=cb_manager)
         employee_tool = EmployeeInfoTool("Employee1", callbacks=cb_manager)
-        #tools = [acs_tool, employee_tool]dk
-        tools = [acs_tool]
+        card_summary_tool = CardSummaryTool("Card", callbacks=cb_manager)
+        #tools = [acs_tool, employee_tool]
+        tools = [acs_tool,card_summary_tool]
 
         print("Suffix Prompt:", overrides.get("prompt_template_suffix") or self.template_suffix)
         prompt = ZeroShotAgent.create_prompt(
@@ -151,3 +152,18 @@ class EmployeeInfoTool(CsvLookupTool):
 
     def employee_info(self, unused: str) -> str:
         return self.lookup(self.employee_name)
+    
+class CardSummaryTool(CsvLookupTool):
+    card_name: str = ""
+
+    def __init__(self, card_name: str, callbacks: Callbacks = None):
+        super().__init__(filename="data/summaries_map_reduce.csv", 
+                         key_field="summary", 
+                         name="CardGuideSummary", 
+                         description="useful for answering questions about the employee, their benefits and other personal information",
+                         callbacks=callbacks)
+        self.func = self.summary_info
+        self.card_name = card_name
+
+    def summary_info(self, unused: str) -> str:
+        return self.lookup(self.card_name)

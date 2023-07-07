@@ -47,7 +47,7 @@ COG_SERV_ENDPOINT = os.environ.get("COG_SERV_ENDPOINT", "")
 COG_SERV_KEY = os.environ.get("COG_SERV_KEY", "")
 
 OPENAI_RESOURCE_ENDPOINT = os.environ.get("OPENAI_RESOURCE_ENDPOINT", "https://cog-7rijursimui6o.openai.azure.com/")
-OPENAI_API_KEY = os.environ.get("OPENAI_API_KEY", "c0502019211b4e6ba314006ec35017c2")
+OPENAI_API_KEY = os.environ.get("OPENAI_API_KEY")
 
 KB_BLOB_CONN_STR = os.environ.get("KB_BLOB_CONN_STR", "")
 
@@ -103,7 +103,7 @@ COG_VECSEARCH_VECTOR_INDEX = os.environ.get("COG_VECSEARCH_VECTOR_INDEX", "vec-i
 
 
 ############################
-## Defaults and Constants ##
+## Defaults and Constants ## 
 ############################
 
 AzureWebJobsStorage = os.environ.get("AzureWebJobsStorage", KB_BLOB_CONN_STR)
