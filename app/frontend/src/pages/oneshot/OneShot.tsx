@@ -17,7 +17,7 @@ const OneShot = () => {
     const [promptTemplatePrefix, setPromptTemplatePrefix] = useState<string>("");
     const [promptTemplateSuffix, setPromptTemplateSuffix] = useState<string>("");
     const [retrieveCount, setRetrieveCount] = useState<number>(3);
-    const [useVectorDB, setUseVectorDB] = useState<boolean>(false);
+    const [useVectorDB, setUseVectorDB] = useState<boolean>(true);
     const [useSemanticRanker, setUseSemanticRanker] = useState<boolean>(true);
     const [useSemanticCaptions, setUseSemanticCaptions] = useState<boolean>(false);
     const [excludeCategory, setExcludeCategory] = useState<string>("");

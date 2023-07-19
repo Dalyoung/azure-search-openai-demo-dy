@@ -21,9 +21,10 @@ from tenacity import retry, wait_random_exponential, stop_after_attempt
 class ReadRetrieveReadApproach(Approach):
 
     template_prefix = \
-"You are an intelligent assistant helping Contoso Inc employees with their healthcare plan questions and employee handbook questions. " \
+"You are an intelligent assistant helping customers of 'Hyundai Card' Company" \
 "Answer the question using only the data provided in the information sources below. " \
 "For tabular information return it as an html table. Do not return markdown format. " \
+"Answer Only in Korean and translate 'Hyundai' to '현대'"\
 "Each source has a name followed by colon and the actual data, quote the source name for each piece of data you use in the response. " \
 "For example, if the question is \"What color is the sky?\" and one of the information sources says \"info123: the sky is blue whenever it's not cloudy\", then answer with \"The sky is blue [info123]\" " \
 "It's important to strictly follow the format where the name of the source is in square brackets at the end of the sentence, and only up to the prefix before the colon (\":\"). " \
@@ -39,7 +40,7 @@ Question: {input}
 
 Thought: {agent_scratchpad}"""    
 
-    CognitiveSearchToolDescription = "useful for searching the Microsoft employee benefits information such as healthcare plans, retirement plans, etc."
+    CognitiveSearchToolDescription = "useful for searching the Hyundai Credit Card guides, informations, events, etc."
 
     def __init__(self, search_client: SearchClient, openai_deployment: str, sourcepage_field: str, content_field: str, search_client_vector: SearchClient, openai_client : openai):
         self.search_client = search_client
@@ -111,15 +112,16 @@ Thought: {agent_scratchpad}"""
         employee_tool = EmployeeInfoTool("Employee1", callbacks=cb_manager)
         card_summary_tool = CardSummaryTool("Card", callbacks=cb_manager)
         #tools = [acs_tool, employee_tool]
-        tools = [acs_tool,card_summary_tool]
+        # tools = [acs_tool,card_summary_tool]
+        tools = [acs_tool]
 
-        print("Suffix Prompt:", overrides.get("prompt_template_suffix") or self.template_suffix)
+        #print("Suffix Prompt:", overrides.get("prompt_template_suffix") or self.template_suffix)
         prompt = ZeroShotAgent.create_prompt(
             tools=tools,
             prefix=overrides.get("prompt_template_prefix") or self.template_prefix,
             suffix=overrides.get("prompt_template_suffix") or self.template_suffix,
             input_variables = ["input", "agent_scratchpad"])
-        print("Temperature: ", overrides.get("temperature"))
+        #print("Temperature: ", overrides.get("temperature"))
         llm = AzureOpenAI(deployment_name=self.openai_deployment, 
                           temperature=overrides.get("temperature") or 0.3, 
                           openai_api_key=openai.api_key, 

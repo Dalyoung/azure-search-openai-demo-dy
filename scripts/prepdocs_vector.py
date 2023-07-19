@@ -66,7 +66,7 @@ openai.api_key = os.getenv("OPENAI_API_KEY")
 openai.api_base = os.getenv("OPENAI_ENDPOINT")  
 openai.api_version = os.getenv("OPENAI_API_VERSION") 
 
-print("OpenAI Info :  " + openai.api_key, openai.api_base )
+#print("OpenAI Info :  " + openai.api_key, openai.api_base )
 
 
 
